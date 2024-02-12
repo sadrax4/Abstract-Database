@@ -1,79 +1,104 @@
-import { UpdateFilter } from "mongodb";
-import mongoose, { Aggregate, AggregateOptions, Document, FilterQuery, Model, PipelineStage, PopulateOptions, QueryOptions, UpdateQuery } from "mongoose";
+import { DeleteOptions, UpdateFilter } from "mongodb";
+import mongoose, { Aggregate, AggregateOptions, Document, FilterQuery, Model, PipelineStage, PopulateOptions, ProjectionType, QueryOptions, Types, UpdateQuery } from "mongoose";
+import { AbstractDocument } from "./abstract.schema";
+import { Logger, NotFoundException } from "@nestjs/common";
 
-export abstract class UserRepository<TDocument extends Document>{
+export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     constructor(
-        protected readonly entityModel: Model<TDocument>
+        protected readonly entityModel: Model<TDocument>,
+        protected readonly logger: Logger
     ) { };
     async create(
-        entityQueryData: unknown
-    ): Promise<TDocument> {
-        const entity = new this.entityModel(entityQueryData);
-        return entity.save();
+        document: Omit<TDocument, "_id">,
+    ):Promise<TDocument> {
+        const entity = new this.entityModel({
+            _id: new Types.ObjectId(),
+            ...document
+        });
+        return ((await entity.save()).toJSON()) as unknown as TDocument
     }
+
     async findOne(
-        entityFilterQuery: FilterQuery<string | unknown>,
-        projection?: Record<string, Document>
-    ): Promise<TDocument | null> {
-        return this.entityModel.findOne(
+        entityFilterQuery: FilterQuery<string>,
+        projection?: ProjectionType<TDocument>,
+        options?: QueryOptions<TDocument>
+    ) {
+        const document = this.entityModel.findOne(
             entityFilterQuery,
-            { _id: 0, __v: 0, ...projection }
-        ).exec();
+            projection,
+            options
+        ).lean(true).exec();
+        if (!document) {
+            this.logger.warn("Couldn't find any documents")
+            throw new NotFoundException("no documents found")
+        }
+        return document
     }
     async findByIdAndUpdate(
         id: mongoose.ObjectId | string,
         update?: UpdateQuery<TDocument>,
-        options?: QueryOptions<TDocument> | null
-    ): Promise<TDocument | null> {
-        return this.entityModel.findByIdAndUpdate(
+        options?: QueryOptions<TDocument>
+    ) {
+        const document = this.entityModel.findByIdAndUpdate(
             id,
             update,
             options
-        ).exec();
+        ).lean(true).exec();
+        if (!document) {
+            this.logger.warn("Couldn't find any documents")
+            throw new NotFoundException("no documents found")
+        }
+        return document;
     }
     async find(
         entityFilterQuery: FilterQuery<TDocument>,
-        projection?: Record<string, Document>,
-        options?: QueryOptions<TDocument> | null
-    ): Promise<TDocument[] | null> {
-        return this.entityModel.find(
+        projection?: ProjectionType<TDocument>,
+        options?: QueryOptions<TDocument>
+    ) {
+        const documents = this.entityModel.find(
             entityFilterQuery,
-            { _id: 0, __v: 0, ...projection },
+            projection,
             options
-        ).exec();
+        ).lean(true).exec();
+        if (!document) {
+            this.logger.warn("Couldn't find any documents")
+            throw new NotFoundException("no documents found")
+        }
+        return documents
     }
     async findById(
         id: mongoose.ObjectId | string,
         projection?: Record<string, Document>,
-        options?: QueryOptions<TDocument> | null
-    ): Promise<TDocument | null> {
-        return await this.entityModel.findById(
+        options?: QueryOptions<TDocument>
+    ) {
+        const document = await this.entityModel.findById(
             id,
             { _id: 0, __v: 0, ...projection },
             options
         ).exec();
-    }
-    async findByIdAndRemove(
-        id: mongoose.ObjectId | string,
-        options?: QueryOptions<TDocument>
-    ): Promise<TDocument | null> {
-        return await this.entityModel.findByIdAndRemove(
-            id,
-            options
-        ).exec();
+        if (!document) {
+            this.logger.warn("Couldn't find any documents")
+            throw new NotFoundException("no documents found")
+        }
+        return document;
     }
     async findOneAndUpdate(
         filterQuery: FilterQuery<TDocument>,
         updateQueryData: UpdateFilter<TDocument>
-    ): Promise<TDocument | null> {
-        return this.entityModel.findOneAndUpdate(
+    ) {
+        const document = this.entityModel.findOneAndUpdate(
             filterQuery,
             updateQueryData
         ).exec();
+        if (!document) {
+            this.logger.warn("Couldn't find any documents")
+            throw new NotFoundException("no documents found")
+        }
+        return document;
     }
     async deleteMany(
         filterQuery: FilterQuery<TDocument>,
-        options?: QueryOptions<TDocument>
+        options?: DeleteOptions
     ): Promise<Boolean> {
         const deleteResult = await this.entityModel.deleteMany(filterQuery, options);
         return deleteResult.deletedCount >= 1
