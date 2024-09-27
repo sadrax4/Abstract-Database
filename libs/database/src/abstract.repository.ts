@@ -14,7 +14,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
             _id: new Types.ObjectId(),
             ...document
         });
-        return ((await entity.save()).toJSON()) as unknown as TDocument
+        return ((
+            await entity.save()
+        ).toJSON()) as unknown as TDocument
     }
 
     async findOne(
@@ -113,14 +115,19 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         filterQuery: FilterQuery<TDocument>,
         options?: DeleteOptions
     ): Promise<Boolean> {
-        const deleteResult = await this.entityModel.deleteMany(filterQuery, options);
+        const deleteResult = await this.entityModel.deleteMany(
+            filterQuery,
+            options
+        );
         return deleteResult.deletedCount >= 1
     }
 
     async deleteOne(
         filterQuery: FilterQuery<TDocument>
     ): Promise<Boolean> {
-        const deleteResult = await this.entityModel.deleteOne(filterQuery);
+        const deleteResult = await this.entityModel.deleteOne(
+            filterQuery
+        );
         return deleteResult.deletedCount >= 1;
     }
 
@@ -128,14 +135,20 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         docs: Array<any>,
         options: PopulateOptions | Array<PopulateOptions>
     ): Promise<Array<TDocument>> {
-        return this.entityModel.populate(docs, options);
+        return this.entityModel.populate(
+            docs,
+            options
+        );
     }
 
     aggregate<R = any>(
         pipeline: PipelineStage[],
         options?: AggregateOptions,
     ): Aggregate<Array<R>> {
-        return this.entityModel.aggregate(pipeline, options)
+        return this.entityModel.aggregate(
+            pipeline,
+            options
+        )
     }
 
 }
