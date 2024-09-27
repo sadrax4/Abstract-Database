@@ -81,4 +81,18 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         return document;
     }
 
+    async findOneAndUpdate(
+        filterQuery: FilterQuery<TDocument>,
+        updateQueryData: UpdateFilter<TDocument>
+    ) {
+        const document = this.entityModel.findOneAndUpdate(
+            filterQuery,
+            updateQueryData
+        ).exec();
+        if (!document) {
+            throw new NotFoundException("no documents found")
+        }
+        return document;
+    }
+
 }
