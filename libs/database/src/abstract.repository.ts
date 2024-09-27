@@ -16,5 +16,21 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         });
         return ((await entity.save()).toJSON()) as unknown as TDocument
     }
-    
+
+    async findOne(
+        filterQuery: FilterQuery<TDocument>,
+        projection?: ProjectionType<TDocument>,
+        options?: QueryOptions<TDocument>
+    ) {
+        const document = this.entityModel.findOne(
+            filterQuery,
+            projection,
+            options
+        ).lean(true).exec();
+        if (!document) {
+            throw new NotFoundException("no documents found")
+        }
+        return document
+    }
+
 }
